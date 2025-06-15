@@ -1,0 +1,127 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "JobQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": { "QueueName": "AsyncJobQueue" }
+    },
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": { "Service": "lambda.amazonaws.com" },
+            "Action": "sts:AssumeRole"
+          }]
+        },
+        "Policies": [{
+          "PolicyName": "LambdaSQSPolicy",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Action": [
+                "logs:*",
+                "sqs:*"
+              ],
+              "Resource": "*"
+            }]
+          }
+        }]
+      }
+    },
+    "SubmitFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "submit_handler.lambda_handler",
+        "Runtime": "python3.11",
+        "Role": { "Fn::GetAtt": ["LambdaExecutionRole", "Arn"] },
+        "Code": {
+          "S3Bucket": "genesis-test-bucket-11158",
+          "S3Key": "submit_handler.zip"
+        },
+        "Environment": {
+          "Variables": {
+            "BASIC_USER": "admin",
+            "BASIC_PASS": "secret",
+            "QUEUE_URL": { "Ref": "JobQueue" }
+          }
+        }
+      }
+    },
+    "WorkerFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "worker_handler.lambda_handler",
+        "Runtime": "python3.11",
+        "Role": { "Fn::GetAtt": ["LambdaExecutionRole", "Arn"] },
+        "Code": {
+          "S3Bucket": "genesis-test-bucket-11158",
+          "S3Key": "worker_handler.zip"
+        }
+      }
+    },
+    "SQSInvokeMapping": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "BatchSize": 1,
+        "EventSourceArn": { "Fn::GetAtt": ["JobQueue", "Arn"] },
+        "FunctionName": { "Ref": "WorkerFunction" }
+      }
+    },
+    "RestAPI": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "AsyncAPI"
+      }
+    },
+    "APIResource": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": { "Fn::GetAtt": ["RestAPI", "RootResourceId"] },
+        "PathPart": "submit",
+        "RestApiId": { "Ref": "RestAPI" }
+      }
+    },
+    "APIMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "ResourceId": { "Ref": "APIResource" },
+        "RestApiId": { "Ref": "RestAPI" },
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Sub": [
+              "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SubmitFunction.Arn}/invocations",
+              {}
+            ]
+          }
+        }
+      }
+    },
+    "APIDeployment": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "DependsOn": ["APIMethod"],
+      "Properties": {
+        "RestApiId": { "Ref": "RestAPI" },
+        "StageName": "prod"
+      }
+    },
+    "ApiInvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": { "Ref": "SubmitFunction" },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/POST/submit"
+        }
+      }
+    }
+  }
+}
