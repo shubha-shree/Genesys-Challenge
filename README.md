@@ -12,7 +12,8 @@ High Level Design:
 
 2. Folder Structure:
    
-   ![image](https://github.com/user-attachments/assets/b57d1ef2-0841-4d5c-b6fc-6bca46fc05fe)
+   ![image](https://github.com/user-attachments/assets/e6c8da77-953f-4b05-8d33-7a50ee169600)
+
 
 3. Key Resources:
    a. API Gateway (Rest API)
