@@ -12,7 +12,8 @@ High Level Design:
 
 2. Folder Structure:
    
-   ![image](https://github.com/user-attachments/assets/e6c8da77-953f-4b05-8d33-7a50ee169600)
+   ![image](https://github.com/user-attachments/assets/b4c321ee-b6f8-41aa-8c4a-cbe03916c77b)
+
 
 
 3. Key Resources:
