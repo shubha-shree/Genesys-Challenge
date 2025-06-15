@@ -3,7 +3,7 @@
 ## Problem Statement:
 Design and implement a REST API with basic authentication that accepts data and processes it asynchronously. Use Infrastructure as Code (IaC) to create the necessary infrastructure, ensuring adherence to best practices throughout. Include unit tests to validate your implementation. You are encouraged to enhance the solution with any additional features you find relevant to showcase your skills.
 
-## Solution
+## Solution:
 
 High Level Design:
 
