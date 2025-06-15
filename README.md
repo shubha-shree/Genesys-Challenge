@@ -1,4 +1,4 @@
-# Genesis-Challenge
+# Genesys-Challenge
 
 High Level Design:
 
